@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, fs::File, io::BufWriter, path::Path};
 
 #[derive(Copy, Clone)]
 pub struct RGB {
@@ -103,28 +103,64 @@ impl Display for HSL {
     }
 }
 
+struct Pixels {
+    width: u32,
+    height: u32,
+    data: Vec<u8>,
+}
+
+impl Pixels {
+    fn new(width: u32, height: u32) -> Self {
+        let size = (width * height << 2) as usize;
+        let data = vec![255; size];
+        Self {
+            width,
+            height,
+            data,
+        }
+    }
+
+    fn save_image(&self, name: &str) {
+        let path = Path::new(name);
+        let file = File::create(path).unwrap();
+        let ref mut w = BufWriter::new(file);
+
+        let mut encoder = png::Encoder::new(w, self.width, self.height);
+        encoder.set_color(png::ColorType::RGBA);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut writer = encoder.write_header().unwrap();
+
+        writer.write_image_data(&self.data).unwrap();
+    }
+
+    fn set(&mut self, x: u32, y: u32, rgb: RGB) {
+        let index = ((y * self.width + x) << 2) as usize;
+        self.data[index] = rgb.red;
+        self.data[index + 1] = rgb.green;
+        self.data[index + 2] = rgb.blue;
+    }
+}
+
 fn main() {
     let colors = HSL::primary_colors(15);
     for saturation in (0..=4).rev() {
-        println!(r#"<div style="display: display: table;">"#);
+        let mut pixels = Pixels::new(colors.len() as u32, 16);
+
         for intensity in 0..=15 {
-            println!(r#"<div style="display: display: table-row;">"#);
-            for &color in &colors {
-                println!(
-                    r#"<div style="display: table-cell; background-color: {}; width: 16px; height: 16px;"></div>"#,
-                    HSL {
-                        saturation: saturation as f32 / 4.0,
-                        luminance: intensity as f32 / 15.0,
-                        ..color
-                    }
-                );
+            for (x, &color) in colors.iter().enumerate() {
+                let color = &HSL {
+                    saturation: saturation as f32 / 4.0,
+                    luminance: intensity as f32 / 15.0,
+                    ..color
+                };
+                let rgb: RGB = color.into();
+                pixels.set(x as u32, intensity, rgb);
             }
-            println!("</div>");
         }
-        println!("</div>");
-        println!("<br>");
+
+        let name = format!("images/saturation{}.png", saturation);
+        pixels.save_image(&name);
     }
-    println!("</div>");
 }
 
 #[cfg(test)]
