@@ -133,6 +133,14 @@ impl Pixels {
         writer.write_image_data(&self.data).unwrap();
     }
 
+    fn rect(&mut self, x: u32, y: u32, w: u32, h: u32, rgb: RGB) {
+        for x in x..=x + w {
+            for y in y..=y + h {
+                self.set(x, y, rgb);
+            }
+        }
+    }
+
     fn set(&mut self, x: u32, y: u32, rgb: RGB) {
         let index = ((y * self.width + x) << 2) as usize;
         self.data[index] = rgb.red;
@@ -144,7 +152,10 @@ impl Pixels {
 fn main() {
     let colors = HSL::primary_colors(15);
     for saturation in (0..=4).rev() {
-        let mut pixels = Pixels::new(colors.len() as u32, 16);
+        const SCALE: u32 = 4;
+        let width = colors.len() as u32;
+        let height = 16;
+        let mut pixels = Pixels::new(width << SCALE, height << SCALE);
 
         for intensity in 0..=15 {
             for (x, &color) in colors.iter().enumerate() {
@@ -154,7 +165,10 @@ fn main() {
                     ..color
                 };
                 let rgb: RGB = color.into();
-                pixels.set(x as u32, intensity, rgb);
+                let x = x as u32;
+                let y = intensity;
+                let s = (1 << SCALE) - 1;
+                pixels.rect(x << SCALE, y << SCALE, s, s, rgb);
             }
         }
 
