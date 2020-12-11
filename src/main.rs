@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs::File, io::BufWriter, path::Path};
+use std::{fmt::Display, fs::File, io::BufWriter, ops::RangeInclusive, path::Path};
 
 #[derive(Copy, Clone)]
 pub struct RGB {
@@ -67,14 +67,27 @@ impl HSL {
     }
 }
 
+fn clamp(value: f32, range: RangeInclusive<f32>) -> f32 {
+    if value < *range.start() {
+        *range.start()
+    } else if value > *range.end() {
+        *range.end()
+    } else {
+        value
+    }
+}
+
 impl Into<RGB> for &HSL {
     fn into(self) -> RGB {
+        let luminance = clamp(self.luminance, 0.0..=1.0);
+        let saturation = clamp(self.saturation, 0.0..=1.0);
+
         fn hex(v: f32) -> u8 {
             (v * 255f32) as u8
         }
 
         // https://en.wikipedia.org/wiki/HSL_and_HSV
-        let c = self.luminance * self.saturation;
+        let c = luminance * saturation;
         let h = self.hue / 60.0;
         let x = c * (1.0 - (h % 2.0 - 1.0).abs());
         let rgb = match h as u8 % 6 {
@@ -86,7 +99,7 @@ impl Into<RGB> for &HSL {
             5 => (c, 0., x),
             _ => unreachable!(),
         };
-        let m = self.luminance - c;
+        let m = luminance - c;
 
         RGB {
             red: hex(rgb.0 + m),
@@ -151,7 +164,7 @@ impl Pixels {
 
 fn main() {
     let colors = HSL::primary_colors(15);
-    for saturation in (0..=4).rev() {
+    for saturation in (0..=100).step_by(25) {
         const SCALE: u32 = 4;
         let width = colors.len() as u32;
         let height = 16;
@@ -160,13 +173,13 @@ fn main() {
         for intensity in 0..=15 {
             for (x, &color) in colors.iter().enumerate() {
                 let color = &HSL {
-                    saturation: saturation as f32 / 4.0,
+                    saturation: saturation as f32 / 100.0,
                     luminance: intensity as f32 / 15.0,
                     ..color
                 };
                 let rgb: RGB = color.into();
                 let x = x as u32;
-                let y = intensity;
+                let y = 15 - intensity;
                 let s = (1 << SCALE) - 1;
                 pixels.rect(x << SCALE, y << SCALE, s, s, rgb);
             }
