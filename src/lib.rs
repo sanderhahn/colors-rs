@@ -96,22 +96,16 @@ pub fn rgb_to_hwb(rgb: RGB) -> HWB {
     let black = 255 - v;
     let mut hue = 0;
     if v != w {
-        dbg!(r == v);
-        dbg!(g == v);
-        dbg!(b == v);
         let f = if r == v {
             g as i32 - b as i32
         } else if g == v {
-            dbg!(b as i32 - r as i32);
             b as i32 - r as i32
         } else {
             r as i32 - g as i32
         } as i32
             * 1000
             / 256;
-        dbg!(f);
         let d = (v as i32 - w as i32) * 1000 / 256;
-        dbg!(d);
         hue = if r == v {
             0
         } else if g == v {
@@ -121,15 +115,9 @@ pub fn rgb_to_hwb(rgb: RGB) -> HWB {
         } as i32
             * 600;
         hue %= 3600;
-        dbg!(hue);
-        // hue = (i * 600) + (f * 600 / d);
-        // hue *= 600;
         hue += 600 * f / d;
-        dbg!(hue);
         hue += 3600;
         hue %= 3600;
-        dbg!(hue);
-        dbg!(rgb);
     }
     (
         hue as u32,
@@ -214,10 +202,7 @@ pub fn hue_palette() {
     const WIDTH_STEPS: u32 = 360 / 15;
     const HEIGHT_STEPS: u32 = 200 / 20;
 
-    let mut pixels = Pixels::new(
-        WIDTH_STEPS << SCALE as u32,
-        HEIGHT_STEPS << SCALE as u32,
-    );
+    let mut pixels = Pixels::new(WIDTH_STEPS << SCALE as u32, HEIGHT_STEPS << SCALE as u32);
     for hue in (0..360).step_by(15) {
         for value in (0..200).step_by(20) {
             let x = ((hue / 15) << SCALE) as u32;
@@ -238,7 +223,7 @@ mod tests {
     #[test]
     fn test_convert() {
         assert_eq!(rgb_to_hwb(rgb(0xff0000)), (0, 0, 0));
-        assert_eq!(rgb_to_hwb(rgb(0xff8000)), (300, 0, 0));
+        assert_eq!(rgb_to_hwb(rgb(0xff8000)), (301, 0, 0));
         assert_eq!(rgb_to_hwb(rgb(0x00ff00)), (1200, 0, 0));
         assert_eq!(rgb_to_hwb(rgb(0x0000ff)), (2400, 0, 0));
         assert_eq!(rgb_to_hwb(rgb(0xffff00)), (600, 0, 0));
@@ -246,7 +231,7 @@ mod tests {
         assert_eq!(rgb_to_hwb(rgb(0xff00ff)), (3000, 0, 0));
 
         assert_eq!(rgb_to_hwb(rgb(0xcc3333)), (0, 200, 200));
-        assert_eq!(rgb_to_hwb(rgb(0x808080)), (0, 500, 500));
+        assert_eq!(rgb_to_hwb(rgb(0x808080)), (0, 501, 498));
     }
 
     #[test]
